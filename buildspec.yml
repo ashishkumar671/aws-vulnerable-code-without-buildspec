@@ -18,3 +18,16 @@ phases:
           echo "❌ Quality Gate failed"
           exit 1
         fi
+#Software Composition Analysis Scan (SCA scan) using Snyk
+
+     - |-
+          apt-get update
+          apt-get -y install maven 
+          SNYK_TOKEN=#Software Composition Analysis Scan (SCA scan) using Snyk
+
+     - |-
+          apt-get update
+          apt-get -y install maven 
+          SNYK_TOKEN=cf0a411e-c6b5-48c4-8760-6d89116b0162
+          export SNYK_TOKEN
+          mvn snyk:test -fn
