@@ -3,11 +3,22 @@ phases:
   install:
     runtime-versions:
       java: latest
+    commands:
+      - apt-get update && apt-get install -y jq
   build:
     commands:
-      - mvn verify sonar:sonar -Dsonar.projectKey=awsproject01 -Dsonar.organization=awsproject01 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05
-      - sleep 5
-      - |- 
-        quality_status=$(curl -s -u 0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05: https://sonarcloud.io/api/qualitygates/project_status?projectKey=javaprojectaws | jq -r '.projectStatus.status')
-        echo "SonarCloud analysistatus is $quality_status"; 
-        if [ $quality_status = "ERROR" ] ; then exit 1;fi
+      - mvn verify sonar:sonar \
+          -Dsonar.projectKey=awsproject01 \
+          -Dsonar.organization=awsproject01 \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05
+      - sleep 10
+      - |
+        quality_status=$(curl -s -u 0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05: \
+          "https://sonarcloud.io/api/qualitygates/project_status?projectKey=awsproject01" \
+          | jq -r '.projectStatus.status')
+        echo "SonarCloud analysis status is $quality_status"
+        if [ "$quality_status" = "ERROR" ]; then
+          echo "❌ Quality Gate failed"
+          exit 1
+        fi
