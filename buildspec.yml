@@ -7,14 +7,10 @@ phases:
       - apt-get update && apt-get install -y jq
   build:
     commands:
-      - mvn verify sonar:sonar \
-          -Dsonar.projectKey=awsproject01 \
-          -Dsonar.organization=awsproject01 \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05
+      - mvn verify sonar:sonar -Dsonar.projectKey=awsproject01 -Dsonar.organization=awsproject01 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05 
       - sleep 10
       - |
-        quality_status=$(curl -s -u 0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05: \
+        quality_status=$(curl -s -u $SONAR_TOKEN: \
           "https://sonarcloud.io/api/qualitygates/project_status?projectKey=awsproject01" \
           | jq -r '.projectStatus.status')
         echo "SonarCloud analysis status is $quality_status"
