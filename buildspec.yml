@@ -1,28 +1,34 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
       java: latest
     commands:
-      - apt-get update && apt-get install -y jq
+      - apt-get update && apt-get install -y jq maven
+
   build:
     commands:
-      - mvn verify sonar:sonar -Dsonar.projectKey=awsproject01 -Dsonar.organization=awsproject01 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05 
-      - sleep 10
-      - |
-        quality_status=$(curl -s -u $SONAR_TOKEN: \
-          "https://sonarcloud.io/api/qualitygates/project_status?projectKey=awsproject01" \
-          | jq -r '.projectStatus.status')
-        echo "SonarCloud analysis status is $quality_status"
-        if [ "$quality_status" = "ERROR" ]; then
-          echo "❌ Quality Gate failed"
-          exit 1
-        fi
-#Software Composition Analysis Scan (SCA scan) using Snyk
+      # Run Sonar analysis
+      - mvn verify sonar:sonar -Dsonar.projectKey=awsproject01 -Dsonar.organization=awsproject01 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05
 
-     - |-
-          apt-get update
-          apt-get -y install maven 
-          SNYK_TOKEN=cf0a411e-c6b5-48c4-8760-6d89116b0162
-          export SNYK_TOKEN
-          mvn snyk:test -fn
+      # Wait for Sonar to process
+      - sleep 10
+
+      # Check Sonar Quality Gate and save result
+      - quality_status=$(curl -s -u $SONAR_TOKEN: "https://sonarcloud.io/api/qualitygates/project_status?projectKey=awsproject01" | tee sonar-report.json | jq -r '.projectStatus.status')
+      - echo "SonarCloud analysis status is $quality_status"
+      - if [ "$quality_status" = "ERROR" ]; then echo "❌ Quality Gate failed" && exit 1; fi
+
+      # Run Snyk SCA (Software Composition Analysis) - Non-blocking
+      - echo "🔑 Authenticating with Snyk"
+      - snyk auth cf0a411e-c6b5-48c4-8760-6d89116b0162
+      - echo "▶️ Running Snyk test (non-blocking)"
+      - snyk test --severity-threshold=high --json > snyk-report.json || true
+      - echo "📊 Monitoring project in Snyk"
+      - snyk monitor || true
+
+artifacts:
+  files:
+    - snyk-report.json
+    - sonar-report.json
