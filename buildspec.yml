@@ -21,16 +21,21 @@ phases:
 
       # Check Sonar Quality Gate and save result
       - "quality_status=$(curl -s -u 0a6069d5d0e188cf7ee87bad3bbdbfd7eeb1ae05: https://sonarcloud.io/api/qualitygates/project_status?projectKey=awsproject01 | tee sonar-report.json | jq -r '.projectStatus.status') && echo SonarCloud analysis status is $quality_status && if [ \"$quality_status\" = \"ERROR\" ]; then echo Quality Gate failed ❌ && exit 1; fi"
-
-      # Run Snyk SCA (Software Composition Analysis) - Non-blocking
-      - echo "🔑 Authenticating with Snyk"
+      
+      # Authenticate Snyk
       - snyk auth cf0a411e-c6b5-48c4-8760-6d89116b0162
-      - echo "▶️ Running Snyk test (non-blocking)"
+
+      # Run Snyk SCA (Dependencies)
       - snyk test --severity-threshold=high --json > snyk-report.json || true
-      - echo "📊 Monitoring project in Snyk"
+
+      # Run Snyk SAST (Code scan)
+      - snyk code test --severity-threshold=high --json > snyk-code-report.json || true
+
+      # Monitor project in Snyk
       - snyk monitor || true
 
 artifacts:
   files:
     - snyk-report.json
     - sonar-report.json
+    - snyk-code-report.json
